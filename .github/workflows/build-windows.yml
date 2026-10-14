@@ -1,0 +1,41 @@
+name: Build & Release idocker Windows
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up MSVC environment
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build idocker Executable
+      run: cmake --build build --config Release
+
+    - name: Package Artifact
+      shell: bash
+      run: |
+        mkdir -p dist/drivers/x64
+        cp build/Release/idocker.exe dist/ || cp build/idocker.exe dist/ || true
+        cp install-driver.bat dist/
+        cp -r drivers/x64/* dist/drivers/x64/
+        cd dist
+        7z a ../idocker-windows-x64.zip *
+      
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: idocker-windows-x64
+        path: idocker-windows-x64.zip
